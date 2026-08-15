@@ -4,66 +4,77 @@ import { motion, useScroll, useSpring } from "framer-motion";
 import {
   ArrowRight,
   Bot,
+  CalendarCheck,
   Check,
   ChevronRight,
-  Cloud,
+  Mail,
   Menu,
+  MessageSquare,
   Sparkles,
   TrendingUp,
+  UserPlus,
   X,
-  Zap,
 } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
+
 import InteractiveBackground from "@/components/InteractiveBackground";
-import AnimatedCounter from "@/components/AnimatedCounter";
 import LoadingScreen from "@/components/LoadingScreen";
 import BackToTop from "@/components/BackToTop";
-import Link from "next/link";
 
 const features = [
   {
     number: "01",
-    icon: Bot,
-    title: "AI-Powered Software",
+    icon: MessageSquare,
+    title: "Customer Conversations",
     description:
-      "Modern AI products designed to reduce repetitive work and improve everyday business operations.",
+      "Respond to customer enquiries quickly, handle common questions and keep conversations moving without constant manual work.",
   },
   {
     number: "02",
-    icon: Zap,
-    title: "Workflow Automation",
+    icon: UserPlus,
+    title: "Lead Capture",
     description:
-      "Automate routine processes so your team can focus on customers, decisions, and growth.",
+      "Turn incoming enquiries into organized leads by collecting the right details and keeping every opportunity in one place.",
   },
   {
     number: "03",
-    icon: Cloud,
-    title: "Scalable SaaS Products",
+    icon: CalendarCheck,
+    title: "Appointments & Follow-Ups",
     description:
-      "Reliable cloud-based tools designed to grow alongside your business.",
+      "Help customers book appointments and automatically follow up so important opportunities do not get forgotten.",
   },
 ];
 
-const products = [
-  "AI Reminder Assistant",
-  "AI Business Assistant",
-  "AI Resume Builder",
-  "AI Email Writer",
-  "AI Content Generator",
-  "Invoice & Quotation Tools",
+const jobs = [
+  "Answer Customer Enquiries",
+  "Capture & Organize Leads",
+  "Book Appointments",
+  "Send Follow-Ups",
+  "Assist With Business Email",
+  "Handle Repetitive Tasks",
 ];
 
 const reveal = {
-  hidden: { opacity: 0, y: 34 },
+  hidden: {
+    opacity: 0,
+    y: 34,
+  },
+
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.65, ease: "easeOut" as const },
+
+    transition: {
+      duration: 0.65,
+      ease: "easeOut" as const,
+    },
   },
 };
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+
   const { scrollYProgress } = useScroll();
 
   const progress = useSpring(scrollYProgress, {
@@ -75,14 +86,19 @@ export default function Home() {
   return (
     <>
       <LoadingScreen />
+
       <InteractiveBackground />
+
       <BackToTop />
+
       <main>
+        {/* Scroll progress */}
         <motion.div
           style={{ scaleX: progress }}
           className="fixed left-0 top-0 z-[100] h-[3px] w-full origin-left bg-blue-500"
         />
 
+        {/* Background */}
         <div className="site-background" aria-hidden="true">
           <div className="glow glow-one" />
           <div className="glow glow-two" />
@@ -116,10 +132,14 @@ export default function Home() {
           />
         </div>
 
+        {/* NAVBAR */}
         <header className="navbar">
           <a className="brand" href="#home" aria-label="Synqo AI home">
             <motion.span
-              whileHover={{ rotate: -6, scale: 1.06 }}
+              whileHover={{
+                rotate: -6,
+                scale: 1.06,
+              }}
               className="brand-mark"
             >
               S
@@ -130,18 +150,25 @@ export default function Home() {
             </span>
           </a>
 
+          {/* Desktop navigation */}
           <nav className="nav-links" aria-label="Main navigation">
-            <a href="#products">Products</a>
+            <a href="#product">AI Employee</a>
+
             <a href="#solutions">Solutions</a>
-            <a href="#about">About</a>
-            <a href="#contact">Contact</a>
+
+            <Link href="/services">Services</Link>
+
+            <Link href="/pricing">Pricing</Link>
+
+            <Link href="/about">About</Link>
           </nav>
 
-          <a className="nav-button hidden sm:inline-flex" href="#contact">
-            Get Started
+          <Link className="nav-button hidden sm:inline-flex" href="/contact">
+            Request Access
             <ArrowRight size={17} />
-          </a>
+          </Link>
 
+          {/* Mobile menu button */}
           <button
             type="button"
             aria-label="Open mobile menu"
@@ -151,35 +178,79 @@ export default function Home() {
             {menuOpen ? <X size={21} /> : <Menu size={21} />}
           </button>
 
+          {/* Mobile navigation */}
           {menuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -12, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
+              initial={{
+                opacity: 0,
+                y: -12,
+                scale: 0.98,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+              }}
               className="absolute left-3 right-3 top-[78px] rounded-2xl border border-blue-400/20 bg-[#040b16]/95 p-4 shadow-2xl backdrop-blur-2xl sm:hidden"
             >
-              {["Products", "Solutions", "About", "Contact"].map((item) => (
+              {[
+                ["AI Employee", "product"],
+                ["Solutions", "solutions"],
+              ].map(([label, id]) => (
                 <a
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
+                  key={id}
+                  href={`#${id}`}
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center justify-between rounded-xl px-4 py-4 text-sm font-semibold text-slate-200 hover:bg-blue-500/10"
                 >
-                  {item}
+                  {label}
+
                   <ChevronRight size={16} className="text-blue-400" />
                 </a>
               ))}
+
+              <Link
+                href="/services"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-between rounded-xl px-4 py-4 text-sm font-semibold text-slate-200 hover:bg-blue-500/10"
+              >
+                Services
+                <ChevronRight size={16} className="text-blue-400" />
+              </Link>
+
+              <Link
+                href="/pricing"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-between rounded-xl px-4 py-4 text-sm font-semibold text-slate-200 hover:bg-blue-500/10"
+              >
+                Pricing
+                <ChevronRight size={16} className="text-blue-400" />
+              </Link>
+
+              <Link
+                href="/about"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-between rounded-xl px-4 py-4 text-sm font-semibold text-slate-200 hover:bg-blue-500/10"
+              >
+                About
+                <ChevronRight size={16} className="text-blue-400" />
+              </Link>
             </motion.div>
           )}
         </header>
 
+        {/* HERO */}
         <section className="hero" id="home">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={{
               hidden: {},
+
               visible: {
-                transition: { staggerChildren: 0.12 },
+                transition: {
+                  staggerChildren: 0.12,
+                },
               },
             }}
             className="hero-content"
@@ -188,30 +259,29 @@ export default function Home() {
               <span className="eyebrow-icon">
                 <Sparkles size={18} />
               </span>
-              Building practical AI for modern businesses
+              Introducing Synqo AI Employee
             </motion.div>
 
             <motion.h1 variants={reveal}>
-              Build smarter.
+              Your AI Employee.
               <br />
-              <span>Automate faster.</span>
-              <br />
-              Grow with AI.
+              <span>Built for everyday business work.</span>
             </motion.h1>
 
             <motion.p variants={reveal} className="hero-description">
-              Synqo AI creates intelligent software, SaaS products and
-              automation tools that simplify work and help businesses scale.
+              Synqo AI Employee helps businesses handle customer enquiries,
+              capture leads, book appointments, send follow-ups and automate
+              repetitive work from one intelligent system.
             </motion.p>
 
             <motion.div variants={reveal} className="hero-actions">
-              <a className="primary-button" href="#products">
-                Explore Products
+              <Link className="primary-button" href="/contact">
+                Request Early Access
                 <ArrowRight size={18} />
-              </a>
+              </Link>
 
-              <a className="secondary-button" href="#about">
-                Building in Public
+              <a className="secondary-button" href="#solutions">
+                See How It Works
               </a>
             </motion.div>
 
@@ -220,22 +290,38 @@ export default function Home() {
                 <span className="status-dot" />
                 Currently building
               </div>
-              <strong>Synqo AI Product Ecosystem</strong>
+
+              <strong>Synqo AI Employee — Early Stage Product</strong>
             </motion.div>
           </motion.div>
 
+          {/* Dashboard Preview */}
           <motion.div
-            initial={{ opacity: 0, x: 70, scale: 0.94 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.9, delay: 0.25, ease: "easeOut" }}
+            initial={{
+              opacity: 0,
+              x: 70,
+              scale: 0.94,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+              scale: 1,
+            }}
+            transition={{
+              duration: 0.9,
+              delay: 0.25,
+              ease: "easeOut",
+            }}
             className="hero-visual"
-            aria-label="Synqo AI platform preview"
+            aria-label="Synqo AI Employee dashboard preview"
           >
             <div className="visual-orbit orbit-one" />
             <div className="visual-orbit orbit-two" />
 
             <motion.div
-              animate={{ y: [0, -7, 0] }}
+              animate={{
+                y: [0, -7, 0],
+              }}
               transition={{
                 duration: 5,
                 repeat: Infinity,
@@ -249,12 +335,14 @@ export default function Home() {
                   <span />
                   <span />
                 </div>
-                <span className="dashboard-label">SYNQO AI</span>
+
+                <span className="dashboard-label">SYNQO AI EMPLOYEE</span>
               </div>
 
               <div className="dashboard-body">
                 <aside className="dashboard-sidebar">
                   <div className="sidebar-logo">S</div>
+
                   <span className="sidebar-item active" />
                   <span className="sidebar-item" />
                   <span className="sidebar-item" />
@@ -264,8 +352,9 @@ export default function Home() {
                 <div className="dashboard-main">
                   <div className="dashboard-heading">
                     <div>
-                      <span>AI Business Dashboard</span>
-                      <h3>Welcome back</h3>
+                      <span>AI Employee Dashboard</span>
+
+                      <h3>Good morning</h3>
                     </div>
 
                     <motion.div
@@ -276,7 +365,10 @@ export default function Home() {
                           "0 0 0 rgba(20,140,255,0)",
                         ],
                       }}
-                      transition={{ duration: 3, repeat: Infinity }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                      }}
                       className="mini-avatar"
                     >
                       AI
@@ -285,43 +377,47 @@ export default function Home() {
 
                   <div className="stat-grid">
                     <motion.div
-                      whileHover={{ y: -5, scale: 1.02 }}
+                      whileHover={{
+                        y: -5,
+                        scale: 1.02,
+                      }}
                       className="stat-card"
                     >
-                      <span>Tasks automated</span>
-                      <strong>
-                        <AnimatedCounter value={1284} />
-                      </strong>
-                      <small>+18.4%</small>
+                      <span>New leads</span>
+                      <strong>24</strong>
+                      <small>Today</small>
                     </motion.div>
 
                     <motion.div
-                      whileHover={{ y: -5, scale: 1.02 }}
+                      whileHover={{
+                        y: -5,
+                        scale: 1.02,
+                      }}
                       className="stat-card"
                     >
-                      <span>Hours saved</span>
-                      <strong>
-                        <AnimatedCounter value={320} />
-                      </strong>
-                      <small>+24.1%</small>
+                      <span>Appointments</span>
+                      <strong>7</strong>
+                      <small>Booked</small>
                     </motion.div>
 
                     <motion.div
-                      whileHover={{ y: -5, scale: 1.02 }}
+                      whileHover={{
+                        y: -5,
+                        scale: 1.02,
+                      }}
                       className="stat-card"
                     >
-                      <span>Growth</span>
-                      <strong>
-                        <AnimatedCounter value={65} suffix="%" />
-                      </strong>
-                      <small>This month</small>
+                      <span>Follow-ups</span>
+                      <strong>18</strong>
+                      <small>Automated</small>
                     </motion.div>
                   </div>
 
                   <div className="chart-card">
                     <div className="chart-header">
-                      <span>Automation performance</span>
-                      <small>Last 30 days</small>
+                      <span>Customer activity</span>
+
+                      <small>Demo dashboard</small>
                     </div>
 
                     <div className="chart-bars">
@@ -329,8 +425,12 @@ export default function Home() {
                         (height, index) => (
                           <motion.span
                             key={index}
-                            initial={{ height: 0 }}
-                            animate={{ height: `${height}%` }}
+                            initial={{
+                              height: 0,
+                            }}
+                            animate={{
+                              height: `${height}%`,
+                            }}
                             transition={{
                               duration: 0.7,
                               delay: 0.7 + index * 0.07,
@@ -348,8 +448,9 @@ export default function Home() {
                     </span>
 
                     <div>
-                      <strong>AI workflow completed</strong>
-                      <small>Customer follow-up automation</small>
+                      <strong>Follow-up sent automatically</strong>
+
+                      <small>New customer enquiry</small>
                     </div>
 
                     <span className="complete-pill">
@@ -363,10 +464,12 @@ export default function Home() {
 
             <div className="floating-card floating-one">
               <span className="floating-icon">
-                <Sparkles size={17} />
+                <Bot size={17} />
               </span>
+
               <div>
-                <strong>AI Assistant</strong>
+                <strong>AI Employee</strong>
+
                 <small>Online and ready</small>
               </div>
             </div>
@@ -375,41 +478,55 @@ export default function Home() {
               <span className="growth-arrow">
                 <TrendingUp size={17} />
               </span>
+
               <div>
-                <strong>+34%</strong>
-                <small>Efficiency growth</small>
+                <strong>Always On</strong>
+
+                <small>Ready for enquiries</small>
               </div>
             </div>
           </motion.div>
         </section>
 
+        {/* Trust strip */}
         <section className="trust-strip">
-          <span>AI SOFTWARE</span>
+          <span>CUSTOMER ENQUIRIES</span>
+
           <span className="divider-dot" />
-          <span>SAAS PRODUCTS</span>
+
+          <span>LEAD CAPTURE</span>
+
           <span className="divider-dot" />
-          <span>BUSINESS AUTOMATION</span>
+
+          <span>APPOINTMENTS</span>
+
           <span className="divider-dot" />
-          <span>BUILT IN CANADA</span>
+
+          <span>FOLLOW-UPS</span>
         </section>
 
+        {/* Solutions */}
         <motion.section
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
+          viewport={{
+            once: true,
+            amount: 0.2,
+          }}
           variants={reveal}
           className="section"
           id="solutions"
         >
           <div className="section-heading">
             <div>
-              <span className="section-label">WHAT WE BUILD</span>
-              <h2>Technology that works for your business.</h2>
+              <span className="section-label">WHAT YOUR AI EMPLOYEE DOES</span>
+
+              <h2>Routine business work, handled intelligently.</h2>
             </div>
 
             <p>
-              We combine artificial intelligence, clean software design and
-              automation to create practical products that solve real problems.
+              Synqo AI Employee is being designed to support the repetitive
+              customer-facing work that takes time away from your team.
             </p>
           </div>
 
@@ -420,11 +537,24 @@ export default function Home() {
               return (
                 <motion.article
                   key={feature.number}
-                  initial={{ opacity: 0, y: 35 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.55, delay: index * 0.12 }}
-                  whileHover={{ y: -9 }}
+                  initial={{
+                    opacity: 0,
+                    y: 35,
+                  }}
+                  whileInView={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  viewport={{
+                    once: true,
+                  }}
+                  transition={{
+                    duration: 0.55,
+                    delay: index * 0.12,
+                  }}
+                  whileHover={{
+                    y: -9,
+                  }}
                   className="feature-card"
                 >
                   <span className="feature-number">{feature.number}</span>
@@ -434,46 +564,65 @@ export default function Home() {
                   </div>
 
                   <h3>{feature.title}</h3>
+
                   <p>{feature.description}</p>
 
-                  <a href="#contact">
-                    Learn more
+                  <Link href="/contact">
+                    Request access
                     <ArrowRight size={16} />
-                  </a>
+                  </Link>
                 </motion.article>
               );
             })}
           </div>
         </motion.section>
 
+        {/* Product */}
         <motion.section
-          initial={{ opacity: 0, y: 45 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.18 }}
-          transition={{ duration: 0.7 }}
+          initial={{
+            opacity: 0,
+            y: 45,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+            amount: 0.18,
+          }}
+          transition={{
+            duration: 0.7,
+          }}
           className="section products-section"
-          id="products"
+          id="product"
         >
           <div className="product-panel">
             <div className="product-copy">
-              <span className="section-label">SYNQO AI ECOSYSTEM</span>
-              <h2>One brand. Multiple intelligent products.</h2>
+              <span className="section-label">
+                ONE AI EMPLOYEE. MULTIPLE JOBS.
+              </span>
+
+              <h2>
+                One intelligent workspace for everyday business operations.
+              </h2>
 
               <p>
-                We are building a connected suite of AI tools for productivity,
-                business operations, communication, content and automation.
+                Instead of switching between disconnected tools, Synqo AI
+                Employee is being built as one system that can assist across
+                customer communication, leads, scheduling and follow-ups.
               </p>
 
-              <a className="primary-button" href="#contact">
-                Follow Our Journey
+              <Link className="primary-button" href="/contact">
+                Join Early Access
                 <ArrowRight size={18} />
-              </a>
+              </Link>
             </div>
 
             <div className="product-list">
-              {products.map((product, index) => (
+              {jobs.map((job, index) => (
                 <motion.div
-                  key={product}
+                  key={job}
                   whileHover={{
                     x: 10,
                     scale: 1.02,
@@ -486,7 +635,9 @@ export default function Home() {
                   className="product-item premium-product-item"
                 >
                   <span>{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{product}</strong>
+
+                  <strong>{job}</strong>
+
                   <ArrowRight size={17} />
                 </motion.div>
               ))}
@@ -494,77 +645,115 @@ export default function Home() {
           </div>
         </motion.section>
 
+        {/* About */}
         <motion.section
-          initial={{ opacity: 0, scale: 0.97 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.65 }}
+          initial={{
+            opacity: 0,
+            scale: 0.97,
+          }}
+          whileInView={{
+            opacity: 1,
+            scale: 1,
+          }}
+          viewport={{
+            once: true,
+          }}
+          transition={{
+            duration: 0.65,
+          }}
           className="section about-section"
           id="about"
         >
           <div className="about-card">
-            <span className="section-label">BUILDING IN PUBLIC</span>
-            <h2>Follow Synqo AI from the first line of code.</h2>
+            <span className="section-label">BUILT BY SYNQO AI</span>
+
+            <h2>We are building AI that works like part of your team.</h2>
 
             <p>
-              We are sharing the real journey of building AI products, launching
-              SaaS tools, learning from users and growing a technology company
-              from Canada.
+              Synqo AI is building practical artificial intelligence for real
+              business operations. Our first flagship product, Synqo AI
+              Employee, is focused on reducing repetitive work while keeping
+              businesses in control.
             </p>
 
-            <a className="secondary-button" href="https://synqoai.com">
-              Visit synqoai.com
+            <Link className="secondary-button" href="/about">
+              About Synqo AI
               <ArrowRight size={17} />
-            </a>
+            </Link>
           </div>
         </motion.section>
 
+        {/* CTA */}
         <motion.section
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
+          initial={{
+            opacity: 0,
+            y: 40,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
+          transition={{
+            duration: 0.7,
+          }}
           className="cta-section"
           id="contact"
         >
           <div className="cta-glow" />
 
-          <span className="section-label">LET&apos;S BUILD THE FUTURE</span>
-          <h2>Ready to grow with intelligent software?</h2>
+          <span className="section-label">EARLY ACCESS</span>
+
+          <h2>Want an AI Employee for your business?</h2>
 
           <p>
-            Follow the Synqo AI journey and be the first to discover our
-            upcoming products.
+            Synqo AI Employee is currently in development. Join early access,
+            tell us about your business and be among the first to see the
+            product.
           </p>
 
           <div className="hero-actions">
-            <a className="primary-button" href="mailto:hello.synqoai@gmail.com">
-              Contact Synqo AI
+            <Link className="primary-button" href="/contact">
+              Request Early Access
               <ArrowRight size={18} />
-            </a>
+            </Link>
 
-            <a className="secondary-button" href="https://synqoai.com">
-              Visit Website
+            <a className="secondary-button" href="mailto:synqoai@yahoo.com">
+              <Mail size={17} />
+              Contact Synqo AI
             </a>
           </div>
         </motion.section>
 
+        {/* Footer */}
         <footer>
           <a className="brand" href="#home">
             <span className="brand-mark">S</span>
+
             <span className="brand-text">
               SYNQO <strong>AI</strong>
             </span>
           </a>
 
-          <p>Building the future with AI.</p>
+          <p>Building practical AI for modern businesses.</p>
 
           <div className="footer-links">
             <Link href="/">Home</Link>
+
             <Link href="/about">About</Link>
-            <Link href="/products">Products</Link>
+
+            <Link href="/products">AI Employee</Link>
+
+            <Link href="/services">Services</Link>
+
+            <Link href="/pricing">Pricing</Link>
+
             <Link href="/contact">Contact</Link>
+
             <Link href="/privacy">Privacy</Link>
+
             <Link href="/terms">Terms</Link>
           </div>
 

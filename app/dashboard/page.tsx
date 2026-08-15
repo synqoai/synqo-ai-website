@@ -1,17 +1,113 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  BellRing,
+  Bot,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  FileText,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Mail,
+  Menu,
+  Settings,
+  Sparkles,
+  UserRound,
+  X,
+  Zap,
+} from "lucide-react";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 
 import { auth } from "../lib/firebase";
+import styles from "./dashboard.module.css";
+
+const TRIAL_LENGTH_DAYS = 30;
+
+type ProductCard = {
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ size?: number }>;
+  href: string;
+  status: string;
+};
+
+const products: ProductCard[] = [
+  {
+    title: "Synqo Reminder",
+    description:
+      "Create smart reminders, organize your day and never miss an important task.",
+    icon: BellRing,
+    href: "/products",
+    status: "Available",
+  },
+  {
+    title: "Synqo AI Employee",
+    description:
+      "Automate repetitive work and run daily business tasks with intelligent assistance.",
+    icon: Bot,
+    href: "/products",
+    status: "Coming soon",
+  },
+  {
+    title: "Synqo Business OS",
+    description:
+      "Manage customers, operations, invoices and growth from one connected workspace.",
+    icon: LayoutDashboard,
+    href: "/products",
+    status: "In development",
+  },
+];
+
+function getFirstName(user: User | null) {
+  if (!user) return "there";
+
+  if (user.displayName?.trim()) {
+    return user.displayName.trim().split(" ")[0];
+  }
+
+  if (user.email) {
+    return user.email.split("@")[0];
+  }
+
+  return "there";
+}
+
+function getTrialInfo(user: User | null) {
+  const createdAt = user?.metadata.creationTime
+    ? new Date(user.metadata.creationTime).getTime()
+    : Date.now();
+
+  const elapsedDays = Math.floor(
+    (Date.now() - createdAt) / (1000 * 60 * 60 * 24),
+  );
+
+  const remainingDays = Math.max(TRIAL_LENGTH_DAYS - elapsedDays, 0);
+  const progress = Math.min(
+    Math.max(
+      ((TRIAL_LENGTH_DAYS - remainingDays) / TRIAL_LENGTH_DAYS) * 100,
+      0,
+    ),
+    100,
+  );
+
+  return { remainingDays, progress };
+}
 
 export default function DashboardPage() {
   const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -32,520 +128,339 @@ export default function DashboardPage() {
     return unsubscribe;
   }, [router]);
 
-  const logout = async () => {
-    setLoggingOut(true);
+  const firstName = useMemo(() => getFirstName(user), [user]);
+  const trial = useMemo(() => getTrialInfo(user), [user]);
+
+  async function handleSignOut() {
+    setSigningOut(true);
 
     try {
       await signOut(auth);
       router.replace("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      setLoggingOut(false);
+    } catch {
+      setSigningOut(false);
     }
-  };
+  }
 
   if (loading) {
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.loader} />
-        <p style={styles.loadingText}>Loading your dashboard...</p>
+      <main className={styles.loadingPage}>
+        <Loader2 className={styles.spinner} size={36} />
+        <p>Loading your Synqo AI workspace...</p>
       </main>
     );
   }
 
   return (
-    <main style={styles.page}>
-      <header style={styles.header}>
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          style={styles.brandButton}
-        >
-          <span style={styles.logo}>S</span>
+    <main className={styles.page}>
+      <div className={styles.background} aria-hidden="true">
+        <div className={styles.grid} />
+        <div className={styles.glowOne} />
+        <div className={styles.glowTwo} />
+      </div>
 
-          <span>
-            <span style={styles.brandName}>Synqo AI</span>
-            <span style={styles.brandTagline}>Intelligence in sync</span>
-          </span>
-        </button>
-
-        <div style={styles.headerActions}>
-          <div style={styles.userInfo}>
-            <span style={styles.userName}>
-              {user?.displayName || "Synqo User"}
+      <aside
+        className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ""}`}
+      >
+        <div className={styles.sidebarTop}>
+          <Link className={styles.brand} href="/">
+            <span className={styles.brandMark}>S</span>
+            <span>
+              SYNQO <strong>AI</strong>
             </span>
-            <span style={styles.userEmail}>{user?.email}</span>
+          </Link>
+
+          <button
+            className={styles.closeButton}
+            type="button"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close navigation"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className={styles.nav}>
+          <Link className={styles.activeNavItem} href="/dashboard">
+            <LayoutDashboard size={18} />
+            Dashboard
+          </Link>
+
+          <Link href="/products">
+            <Sparkles size={18} />
+            Products
+          </Link>
+
+          <Link href="/pricing">
+            <Zap size={18} />
+            Plans
+          </Link>
+
+          <Link href="/settings">
+            <Settings size={18} />
+            Settings
+          </Link>
+        </nav>
+
+        <div className={styles.sidebarFooter}>
+          <div className={styles.userMiniCard}>
+            <div className={styles.avatar}>
+              {firstName.slice(0, 1).toUpperCase()}
+            </div>
+
+            <div>
+              <strong>{user?.displayName || firstName}</strong>
+              <span>{user?.email}</span>
+            </div>
           </div>
 
           <button
+            className={styles.logoutButton}
             type="button"
-            onClick={logout}
-            disabled={loggingOut}
-            style={{
-              ...styles.logoutButton,
-              ...(loggingOut ? styles.disabledButton : {}),
-            }}
+            onClick={handleSignOut}
+            disabled={signingOut}
           >
-            {loggingOut ? "Logging out..." : "Log out"}
+            {signingOut ? (
+              <Loader2 className={styles.spinner} size={17} />
+            ) : (
+              <LogOut size={17} />
+            )}
+            {signingOut ? "Signing out..." : "Sign out"}
           </button>
         </div>
-      </header>
+      </aside>
 
-      <section style={styles.heroSection}>
-        <p style={styles.eyebrow}>SYNQO AI DASHBOARD</p>
+      {menuOpen && (
+        <button
+          className={styles.overlay}
+          type="button"
+          aria-label="Close navigation"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
 
-        <h1 style={styles.heading}>
-          Welcome back,
-          <span style={styles.highlight}>
-            {" "}
-            {user?.displayName?.split(" ")[0] || "Creator"}
-          </span>
-        </h1>
+      <section className={styles.content}>
+        <header className={styles.topbar}>
+          <button
+            className={styles.menuButton}
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu size={21} />
+          </button>
 
-        <p style={styles.description}>
-          Your Synqo AI workspace is ready. Manage your tools, projects and
-          account from one place.
-        </p>
-      </section>
+          <div>
+            <span className={styles.topbarLabel}>Synqo AI Workspace</span>
+            <h1>Dashboard</h1>
+          </div>
 
-      <section style={styles.statsGrid}>
-        <article style={styles.statCard}>
-          <span style={styles.statIcon}>01</span>
-          <p style={styles.statLabel}>Account status</p>
-          <h2 style={styles.statValue}>Active</h2>
-          <p style={styles.statDescription}>
-            Your email is verified and your account is ready.
-          </p>
-        </article>
+          <div className={styles.topbarActions}>
+            <Link className={styles.settingsButton} href="/settings">
+              <Settings size={18} />
+              <span>Settings</span>
+            </Link>
 
-        <article style={styles.statCard}>
-          <span style={styles.statIcon}>02</span>
-          <p style={styles.statLabel}>AI tools</p>
-          <h2 style={styles.statValue}>Coming soon</h2>
-          <p style={styles.statDescription}>
-            Synqo AI tools will appear here as they are launched.
-          </p>
-        </article>
+            <div className={styles.topbarAvatar}>
+              {firstName.slice(0, 1).toUpperCase()}
+            </div>
+          </div>
+        </header>
 
-        <article style={styles.statCard}>
-          <span style={styles.statIcon}>03</span>
-          <p style={styles.statLabel}>Workspace</p>
-          <h2 style={styles.statValue}>Ready</h2>
-          <p style={styles.statDescription}>
-            Your personal dashboard is successfully connected.
-          </p>
-        </article>
-      </section>
+        <div className={styles.main}>
+          <motion.section
+            className={styles.hero}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+          >
+            <div className={styles.heroContent}>
+              <div className={styles.eyebrow}>
+                <Sparkles size={16} />
+                Welcome to your workspace
+              </div>
 
-      <section style={styles.mainGrid}>
-        <article style={styles.mainCard}>
-          <div style={styles.cardHeader}>
-            <div>
-              <p style={styles.cardEyebrow}>QUICK START</p>
-              <h2 style={styles.cardTitle}>Explore Synqo AI</h2>
+              <h2>
+                Welcome back, <span>{firstName}</span>
+              </h2>
+
+              <p>
+                Your Synqo AI account is ready. Start exploring tools designed
+                to help you save time, stay organized and grow faster.
+              </p>
+
+              <div className={styles.heroActions}>
+                <Link className={styles.primaryButton} href="/products">
+                  Explore products
+                  <ArrowRight size={18} />
+                </Link>
+
+                <Link className={styles.secondaryButton} href="/pricing">
+                  View plans
+                </Link>
+              </div>
             </div>
 
-            <span style={styles.statusBadge}>Live</span>
-          </div>
+            <div className={styles.heroVisual}>
+              <div className={styles.orbitOne} />
+              <div className={styles.orbitTwo} />
+              <div className={styles.aiCore}>
+                <Sparkles size={42} />
+              </div>
+            </div>
+          </motion.section>
 
-          <p style={styles.cardDescription}>
-            This is the first version of your authenticated dashboard. Next we
-            can connect real AI products, usage data, subscriptions and account
-            settings.
-          </p>
+          <section className={styles.statsGrid}>
+            <article className={styles.statCard}>
+              <div className={styles.statIcon}>
+                <CheckCircle2 size={20} />
+              </div>
+              <div>
+                <span>Account status</span>
+                <strong>Verified</strong>
+              </div>
+            </article>
 
-          <div style={styles.buttonRow}>
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              style={styles.primaryButton}
-            >
-              Visit website
-            </button>
+            <article className={styles.statCard}>
+              <div className={styles.statIcon}>
+                <Clock3 size={20} />
+              </div>
+              <div>
+                <span>Free trial</span>
+                <strong>{trial.remainingDays} days left</strong>
+              </div>
+            </article>
 
-            <button
-              type="button"
-              onClick={() => alert("Synqo AI tools are coming soon.")}
-              style={styles.secondaryButton}
-            >
-              View AI tools
-            </button>
-          </div>
-        </article>
+            <article className={styles.statCard}>
+              <div className={styles.statIcon}>
+                <Zap size={20} />
+              </div>
+              <div>
+                <span>Current plan</span>
+                <strong>30-day trial</strong>
+              </div>
+            </article>
+          </section>
 
-        <aside style={styles.profileCard}>
-          <p style={styles.cardEyebrow}>YOUR PROFILE</p>
+          <section className={styles.dashboardGrid}>
+            <div className={styles.productsSection}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <span className={styles.sectionLabel}>Your tools</span>
+                  <h3>Synqo AI products</h3>
+                </div>
 
-          <div style={styles.avatar}>
-            {(user?.displayName || user?.email || "S").charAt(0).toUpperCase()}
-          </div>
+                <Link href="/products">
+                  View all
+                  <ChevronRight size={17} />
+                </Link>
+              </div>
 
-          <h2 style={styles.profileName}>
-            {user?.displayName || "Synqo User"}
-          </h2>
+              <div className={styles.productGrid}>
+                {products.map((product, index) => {
+                  const Icon = product.icon;
 
-          <p style={styles.profileEmail}>{user?.email}</p>
+                  return (
+                    <motion.article
+                      className={styles.productCard}
+                      key={product.title}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: index * 0.08 }}
+                    >
+                      <div className={styles.productTop}>
+                        <div className={styles.productIcon}>
+                          <Icon size={22} />
+                        </div>
 
-          <div style={styles.verifiedRow}>
-            <span style={styles.verifiedDot} />
-            Email verified
-          </div>
-        </aside>
+                        <span>{product.status}</span>
+                      </div>
+
+                      <h4>{product.title}</h4>
+                      <p>{product.description}</p>
+
+                      <Link href={product.href}>
+                        Open product
+                        <ArrowRight size={16} />
+                      </Link>
+                    </motion.article>
+                  );
+                })}
+              </div>
+            </div>
+
+            <aside className={styles.rightColumn}>
+              <article className={styles.trialCard}>
+                <div className={styles.trialHeader}>
+                  <div>
+                    <span>Trial progress</span>
+                    <strong>{trial.remainingDays} days remaining</strong>
+                  </div>
+                  <CalendarDays size={22} />
+                </div>
+
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressBar}
+                    style={{ width: `${trial.progress}%` }}
+                  />
+                </div>
+
+                <p>
+                  All premium features are unlocked during your 30-day free
+                  trial.
+                </p>
+
+                <Link href="/pricing">
+                  Choose a plan
+                  <ArrowRight size={16} />
+                </Link>
+              </article>
+
+              <article className={styles.quickActions}>
+                <div className={styles.sectionHeader}>
+                  <div>
+                    <span className={styles.sectionLabel}>Shortcuts</span>
+                    <h3>Quick actions</h3>
+                  </div>
+                </div>
+
+                <Link href="/products">
+                  <span>
+                    <BellRing size={18} />
+                    Explore reminder app
+                  </span>
+                  <ChevronRight size={17} />
+                </Link>
+
+                <Link href="/settings">
+                  <span>
+                    <UserRound size={18} />
+                    Update profile
+                  </span>
+                  <ChevronRight size={17} />
+                </Link>
+
+                <Link href="/contact">
+                  <span>
+                    <Mail size={18} />
+                    Contact support
+                  </span>
+                  <ChevronRight size={17} />
+                </Link>
+
+                <Link href="/about">
+                  <span>
+                    <FileText size={18} />
+                    Learn about Synqo AI
+                  </span>
+                  <ChevronRight size={17} />
+                </Link>
+              </article>
+            </aside>
+          </section>
+        </div>
       </section>
     </main>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  loadingPage: {
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    alignContent: "center",
-    gap: "16px",
-    color: "#ffffff",
-    background:
-      "radial-gradient(circle at top, #08295b 0%, #030b1d 46%, #01030a 100%)",
-  },
-
-  loader: {
-    width: "42px",
-    height: "42px",
-    border: "4px solid rgba(69, 164, 255, 0.2)",
-    borderTopColor: "#2a9cff",
-    borderRadius: "50%",
-    animation: "spin 0.8s linear infinite",
-  },
-
-  loadingText: {
-    color: "#8fa4c0",
-    fontSize: "14px",
-  },
-
-  page: {
-    minHeight: "100vh",
-    padding: "0 28px 50px",
-    color: "#ffffff",
-    background:
-      "radial-gradient(circle at top left, #08295b 0%, #030b1d 40%, #01030a 100%)",
-  },
-
-  header: {
-    maxWidth: "1220px",
-    minHeight: "88px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "24px",
-    margin: "0 auto",
-    borderBottom: "1px solid rgba(89, 151, 226, 0.17)",
-  },
-
-  brandButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: 0,
-    border: 0,
-    color: "#ffffff",
-    background: "transparent",
-    cursor: "pointer",
-  },
-
-  logo: {
-    width: "45px",
-    height: "45px",
-    display: "grid",
-    placeItems: "center",
-    borderRadius: "14px",
-    background: "linear-gradient(135deg, #1597ff, #004bd2)",
-    boxShadow: "0 0 25px rgba(0, 132, 255, 0.38)",
-    fontSize: "22px",
-    fontWeight: 900,
-  },
-
-  brandName: {
-    display: "block",
-    textAlign: "left",
-    fontSize: "17px",
-    fontWeight: 850,
-  },
-
-  brandTagline: {
-    display: "block",
-    marginTop: "2px",
-    color: "#6f89aa",
-    textAlign: "left",
-    fontSize: "10px",
-  },
-
-  headerActions: {
-    display: "flex",
-    alignItems: "center",
-    gap: "18px",
-  },
-
-  userInfo: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-end",
-  },
-
-  userName: {
-    color: "#e8f3ff",
-    fontSize: "13px",
-    fontWeight: 750,
-  },
-
-  userEmail: {
-    marginTop: "3px",
-    color: "#7186a4",
-    fontSize: "11px",
-  },
-
-  logoutButton: {
-    height: "42px",
-    padding: "0 18px",
-    border: "1px solid rgba(87, 157, 237, 0.3)",
-    borderRadius: "11px",
-    color: "#dcecff",
-    background: "rgba(255, 255, 255, 0.045)",
-    fontSize: "13px",
-    fontWeight: 750,
-    cursor: "pointer",
-  },
-
-  disabledButton: {
-    opacity: 0.6,
-    cursor: "not-allowed",
-  },
-
-  heroSection: {
-    maxWidth: "1220px",
-    margin: "0 auto",
-    padding: "80px 0 54px",
-  },
-
-  eyebrow: {
-    margin: "0 0 14px",
-    color: "#48a9ff",
-    fontSize: "11px",
-    fontWeight: 850,
-    letterSpacing: "0.18em",
-  },
-
-  heading: {
-    maxWidth: "820px",
-    margin: 0,
-    fontSize: "clamp(38px, 6vw, 72px)",
-    lineHeight: 1.03,
-    letterSpacing: "-0.055em",
-  },
-
-  highlight: {
-    color: "#42a8ff",
-    textShadow: "0 0 35px rgba(32, 144, 255, 0.35)",
-  },
-
-  description: {
-    maxWidth: "650px",
-    margin: "20px 0 0",
-    color: "#91a4bf",
-    fontSize: "16px",
-    lineHeight: 1.7,
-  },
-
-  statsGrid: {
-    maxWidth: "1220px",
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-    gap: "18px",
-    margin: "0 auto 18px",
-  },
-
-  statCard: {
-    padding: "25px",
-    border: "1px solid rgba(73, 148, 236, 0.2)",
-    borderRadius: "20px",
-    background: "rgba(4, 14, 34, 0.82)",
-    boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
-  },
-
-  statIcon: {
-    display: "inline-grid",
-    placeItems: "center",
-    width: "35px",
-    height: "35px",
-    borderRadius: "10px",
-    color: "#5eb6ff",
-    background: "rgba(22, 132, 255, 0.11)",
-    fontSize: "11px",
-    fontWeight: 850,
-  },
-
-  statLabel: {
-    margin: "19px 0 7px",
-    color: "#778da9",
-    fontSize: "11px",
-    fontWeight: 750,
-    textTransform: "uppercase",
-    letterSpacing: "0.09em",
-  },
-
-  statValue: {
-    margin: 0,
-    fontSize: "25px",
-    letterSpacing: "-0.03em",
-  },
-
-  statDescription: {
-    margin: "11px 0 0",
-    color: "#71839d",
-    fontSize: "12px",
-    lineHeight: 1.6,
-  },
-
-  mainGrid: {
-    maxWidth: "1220px",
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1.7fr) minmax(280px, 0.8fr)",
-    gap: "18px",
-    margin: "0 auto",
-  },
-
-  mainCard: {
-    minHeight: "280px",
-    padding: "30px",
-    border: "1px solid rgba(73, 148, 236, 0.2)",
-    borderRadius: "22px",
-    background:
-      "linear-gradient(145deg, rgba(5, 18, 43, 0.94), rgba(2, 9, 23, 0.92))",
-  },
-
-  cardHeader: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: "20px",
-  },
-
-  cardEyebrow: {
-    margin: "0 0 9px",
-    color: "#48a9ff",
-    fontSize: "10px",
-    fontWeight: 850,
-    letterSpacing: "0.14em",
-  },
-
-  cardTitle: {
-    margin: 0,
-    fontSize: "29px",
-    letterSpacing: "-0.035em",
-  },
-
-  statusBadge: {
-    padding: "7px 11px",
-    border: "1px solid rgba(69, 223, 156, 0.28)",
-    borderRadius: "999px",
-    color: "#98efc5",
-    background: "rgba(25, 139, 91, 0.15)",
-    fontSize: "10px",
-    fontWeight: 800,
-  },
-
-  cardDescription: {
-    maxWidth: "700px",
-    margin: "24px 0 0",
-    color: "#8497b2",
-    fontSize: "14px",
-    lineHeight: 1.75,
-  },
-
-  buttonRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "12px",
-    marginTop: "32px",
-  },
-
-  primaryButton: {
-    minWidth: "145px",
-    height: "47px",
-    padding: "0 18px",
-    border: "1px solid #2194ff",
-    borderRadius: "12px",
-    color: "#ffffff",
-    background: "linear-gradient(135deg, #0a86ff, #0049cf)",
-    fontSize: "13px",
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-
-  secondaryButton: {
-    minWidth: "145px",
-    height: "47px",
-    padding: "0 18px",
-    border: "1px solid rgba(101, 166, 241, 0.3)",
-    borderRadius: "12px",
-    color: "#dcecff",
-    background: "rgba(255, 255, 255, 0.045)",
-    fontSize: "13px",
-    fontWeight: 750,
-    cursor: "pointer",
-  },
-
-  profileCard: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "30px",
-    border: "1px solid rgba(73, 148, 236, 0.2)",
-    borderRadius: "22px",
-    textAlign: "center",
-    background: "rgba(4, 14, 34, 0.86)",
-  },
-
-  avatar: {
-    width: "78px",
-    height: "78px",
-    display: "grid",
-    placeItems: "center",
-    marginTop: "15px",
-    border: "1px solid rgba(69, 158, 255, 0.5)",
-    borderRadius: "24px",
-    color: "#ffffff",
-    background: "linear-gradient(135deg, #168dff, #0054d8)",
-    boxShadow: "0 0 30px rgba(0, 126, 255, 0.26)",
-    fontSize: "31px",
-    fontWeight: 900,
-  },
-
-  profileName: {
-    margin: "18px 0 5px",
-    fontSize: "22px",
-  },
-
-  profileEmail: {
-    margin: 0,
-    color: "#7186a4",
-    fontSize: "12px",
-  },
-
-  verifiedRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    marginTop: "22px",
-    color: "#9deac5",
-    fontSize: "12px",
-    fontWeight: 700,
-  },
-
-  verifiedDot: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "50%",
-    background: "#43d995",
-    boxShadow: "0 0 12px rgba(67, 217, 149, 0.8)",
-  },
-};

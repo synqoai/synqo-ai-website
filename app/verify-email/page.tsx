@@ -1,247 +1,330 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { reload, sendEmailVerification, signOut } from "firebase/auth";
+import {
+  CheckCircle2,
+  Loader2,
+  LogOut,
+  MailCheck,
+  RefreshCw,
+  Send,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import {
+  onAuthStateChanged,
+  reload,
+  sendEmailVerification,
+  signOut,
+  User,
+} from "firebase/auth";
 
 import { auth } from "../lib/firebase";
+import styles from "./verify-email.module.css";
+
+const RESEND_COOLDOWN = 60;
 
 export default function VerifyEmailPage() {
   const router = useRouter();
 
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [resending, setResending] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [checking, setChecking] = useState(false);
-  const [resending, setResending] = useState(false);
 
   useEffect(() => {
-    if (!auth.currentUser) {
-      router.replace("/login");
-    }
-  }, [router]);
-
-  const checkVerification = async () => {
-    setError("");
-    setMessage("");
-    setChecking(true);
-
-    try {
-      const user = auth.currentUser;
-
-      if (!user) {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
         router.replace("/login");
         return;
       }
 
-      await reload(user);
+      try {
+        await reload(currentUser);
 
-      if (user.emailVerified) {
-        setMessage("Email verified successfully. Redirecting...");
-        router.replace("/dashboard");
-      } else {
-        setError(
-          "Email is not verified yet. Open the verification link sent to your inbox.",
-        );
+        if (currentUser.emailVerified) {
+          router.replace("/dashboard");
+          return;
+        }
+
+        setUser(auth.currentUser);
+      } catch {
+        setUser(currentUser);
+      } finally {
+        setChecking(false);
       }
-    } catch (verificationError) {
-      console.error("Verification check error:", verificationError);
-      setError("Unable to check verification. Please try again.");
+    });
+
+    return unsubscribe;
+  }, [router]);
+
+  useEffect(() => {
+    if (cooldown <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setCooldown((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
+
+  async function checkVerificationStatus() {
+    if (!auth.currentUser) {
+      router.replace("/login");
+      return;
+    }
+
+    setChecking(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await reload(auth.currentUser);
+
+      if (auth.currentUser.emailVerified) {
+        setMessage("Email verified successfully. Redirecting...");
+        window.setTimeout(() => {
+          router.replace("/dashboard");
+        }, 700);
+        return;
+      }
+
+      setError(
+        "Your email is not verified yet. Open the verification link in your inbox, then check again.",
+      );
+    } catch {
+      setError(
+        "We could not refresh your verification status. Please try again.",
+      );
     } finally {
       setChecking(false);
     }
-  };
+  }
 
-  const resendVerificationEmail = async () => {
-    setError("");
-    setMessage("");
+  async function resendVerificationEmail() {
+    if (!auth.currentUser || cooldown > 0) {
+      return;
+    }
+
     setResending(true);
+    setMessage("");
+    setError("");
 
     try {
-      const user = auth.currentUser;
+      await sendEmailVerification(auth.currentUser, {
+        url: `${window.location.origin}/verify-email`,
+        handleCodeInApp: false,
+      });
 
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      await sendEmailVerification(user);
-      setMessage("A new verification email has been sent.");
-    } catch (resendError) {
-      console.error("Resend verification error:", resendError);
-      setError(
-        "Unable to resend right now. Please wait a moment and try again.",
+      setCooldown(RESEND_COOLDOWN);
+      setMessage(
+        "A new verification email has been sent. Please check your inbox and spam folder.",
       );
+    } catch (firebaseError: unknown) {
+      const code =
+        typeof firebaseError === "object" &&
+        firebaseError !== null &&
+        "code" in firebaseError
+          ? String(firebaseError.code)
+          : "";
+
+      if (code === "auth/too-many-requests") {
+        setError(
+          "Too many verification requests. Please wait a few minutes and try again.",
+        );
+      } else {
+        setError(
+          "We could not resend the verification email. Please try again.",
+        );
+      }
     } finally {
       setResending(false);
     }
-  };
+  }
 
-  const useDifferentAccount = async () => {
-    await signOut(auth);
-    router.replace("/login");
-  };
+  async function handleSignOut() {
+    setSigningOut(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await signOut(auth);
+      router.replace("/login");
+    } catch {
+      setError("We could not sign you out. Please try again.");
+      setSigningOut(false);
+    }
+  }
+
+  if (checking && !user) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.background} aria-hidden="true">
+          <div className={styles.grid} />
+          <div className={styles.glowOne} />
+          <div className={styles.glowTwo} />
+        </div>
+
+        <div className={styles.loadingState}>
+          <Loader2 className={styles.spinner} size={34} />
+          <p>Checking your account...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main style={styles.page}>
-      <section style={styles.card}>
-        <div style={styles.logo}>S</div>
+    <main className={styles.page}>
+      <div className={styles.background} aria-hidden="true">
+        <div className={styles.grid} />
+        <div className={styles.glowOne} />
+        <div className={styles.glowTwo} />
+      </div>
 
-        <p style={styles.eyebrow}>ONE LAST STEP</p>
+      <motion.section
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55 }}
+        className={styles.card}
+      >
+        <div className={styles.brand}>
+          <span className={styles.brandMark}>S</span>
+          <span>
+            SYNQO <strong>AI</strong>
+          </span>
+        </div>
 
-        <h1 style={styles.heading}>Verify your email</h1>
+        <div className={styles.iconWrap}>
+          <div className={styles.iconGlow} />
+          <MailCheck size={42} />
+        </div>
 
-        <p style={styles.description}>
-          We sent a verification link to{" "}
-          <strong style={styles.email}>
-            {auth.currentUser?.email ?? "your email address"}
-          </strong>
-          . Open the email and click the verification link.
+        <div className={styles.eyebrow}>
+          <Sparkles size={16} />
+          One final step
+        </div>
+
+        <h1>Verify your email address</h1>
+
+        <p className={styles.description}>
+          We sent a verification link to
+          <strong>{user?.email ?? " your email address"}</strong>. Open the
+          message, click the verification link, then return here and check your
+          status.
         </p>
 
-        {error && <div style={styles.error}>{error}</div>}
-        {message && <div style={styles.success}>{message}</div>}
+        <div className={styles.steps}>
+          <div>
+            <span>1</span>
+            <p>Open your email inbox.</p>
+          </div>
+
+          <div>
+            <span>2</span>
+            <p>Click the Synqo AI verification link.</p>
+          </div>
+
+          <div>
+            <span>3</span>
+            <p>Return here and click “I&apos;ve verified my email.”</p>
+          </div>
+        </div>
+
+        {message && (
+          <div className={styles.successMessage} role="status">
+            <CheckCircle2 size={19} />
+            <span>{message}</span>
+          </div>
+        )}
+
+        {error && (
+          <div className={styles.errorMessage} role="alert">
+            <ShieldCheck size={19} />
+            <span>{error}</span>
+          </div>
+        )}
 
         <button
+          className={styles.primaryButton}
           type="button"
-          onClick={checkVerification}
-          disabled={checking || resending}
-          style={styles.primaryButton}
+          onClick={checkVerificationStatus}
+          disabled={checking}
         >
-          {checking ? "Checking..." : "I have verified my email"}
+          {checking ? (
+            <>
+              <Loader2 className={styles.spinner} size={19} />
+              Checking status...
+            </>
+          ) : (
+            <>
+              <RefreshCw size={18} />
+              I&apos;ve verified my email
+            </>
+          )}
         </button>
 
         <button
+          className={styles.secondaryButton}
           type="button"
           onClick={resendVerificationEmail}
-          disabled={checking || resending}
-          style={styles.secondaryButton}
+          disabled={resending || cooldown > 0}
         >
-          {resending ? "Sending..." : "Resend verification email"}
+          {resending ? (
+            <>
+              <Loader2 className={styles.spinner} size={18} />
+              Sending email...
+            </>
+          ) : (
+            <>
+              <Send size={18} />
+              {cooldown > 0
+                ? `Resend available in ${cooldown}s`
+                : "Resend verification email"}
+            </>
+          )}
         </button>
 
         <button
+          className={styles.signOutButton}
           type="button"
-          onClick={useDifferentAccount}
-          disabled={checking || resending}
-          style={styles.linkButton}
+          onClick={handleSignOut}
+          disabled={signingOut}
         >
-          Use a different account
+          {signingOut ? (
+            <>
+              <Loader2 className={styles.spinner} size={17} />
+              Signing out...
+            </>
+          ) : (
+            <>
+              <LogOut size={17} />
+              Use a different account
+            </>
+          )}
         </button>
-      </section>
+
+        <div className={styles.note}>
+          <ShieldCheck size={16} />
+          <span>
+            Can&apos;t find the email? Check your spam, junk, or promotions
+            folder.
+          </span>
+        </div>
+      </motion.section>
     </main>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    padding: "24px",
-    color: "#ffffff",
-    background:
-      "radial-gradient(circle at top, #09244d 0%, #030916 48%, #01030a 100%)",
-  },
-
-  card: {
-    width: "100%",
-    maxWidth: "500px",
-    padding: "42px 34px",
-    border: "1px solid rgba(55, 145, 255, 0.3)",
-    borderRadius: "26px",
-    textAlign: "center",
-    background: "rgba(3, 12, 29, 0.94)",
-    boxShadow: "0 25px 80px rgba(0, 0, 0, 0.5)",
-  },
-
-  logo: {
-    width: "54px",
-    height: "54px",
-    display: "grid",
-    placeItems: "center",
-    margin: "0 auto 28px",
-    borderRadius: "16px",
-    fontSize: "25px",
-    fontWeight: 900,
-    background: "linear-gradient(135deg, #168dff, #0054d8)",
-    boxShadow: "0 0 30px rgba(0, 126, 255, 0.4)",
-  },
-
-  eyebrow: {
-    margin: "0 0 10px",
-    color: "#4da8ff",
-    fontSize: "12px",
-    fontWeight: 800,
-    letterSpacing: "0.16em",
-  },
-
-  heading: {
-    margin: 0,
-    fontSize: "38px",
-    letterSpacing: "-0.035em",
-  },
-
-  description: {
-    margin: "18px 0 28px",
-    color: "#9eacc3",
-    fontSize: "15px",
-    lineHeight: 1.7,
-  },
-
-  email: {
-    color: "#ffffff",
-  },
-
-  error: {
-    marginBottom: "18px",
-    padding: "13px",
-    border: "1px solid rgba(255, 96, 118, 0.35)",
-    borderRadius: "12px",
-    color: "#ffb5c0",
-    background: "rgba(132, 16, 35, 0.25)",
-  },
-
-  success: {
-    marginBottom: "18px",
-    padding: "13px",
-    border: "1px solid rgba(63, 226, 157, 0.32)",
-    borderRadius: "12px",
-    color: "#a7f5d0",
-    background: "rgba(13, 107, 68, 0.23)",
-  },
-
-  primaryButton: {
-    width: "100%",
-    height: "52px",
-    border: "1px solid #2194ff",
-    borderRadius: "13px",
-    color: "#ffffff",
-    background: "linear-gradient(135deg, #087fff, #0051d4)",
-    fontSize: "15px",
-    fontWeight: 750,
-    cursor: "pointer",
-  },
-
-  secondaryButton: {
-    width: "100%",
-    height: "52px",
-    marginTop: "13px",
-    border: "1px solid rgba(106, 165, 236, 0.35)",
-    borderRadius: "13px",
-    color: "#dcecff",
-    background: "rgba(255, 255, 255, 0.045)",
-    fontSize: "15px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  linkButton: {
-    marginTop: "22px",
-    border: 0,
-    color: "#49a8ff",
-    background: "transparent",
-    fontSize: "14px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-};
